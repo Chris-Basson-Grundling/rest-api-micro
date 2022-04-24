@@ -1,0 +1,56 @@
+version: '3'
+services:
+  app:
+    container_name: rest_app
+    build: .
+    ports: 
+      - 8080:8080 
+    restart: on-failure
+    volumes:
+      - api:/usr/src/app/
+    depends_on:
+      - rest-api-micro-mysql
+    networks:
+      - rest-api-micro
+
+  rest-api-micro-mysql:
+    image: mysql:latest
+    container_name: rest_db_mysql
+    ports: 
+      - 3309:3306 #port 3306 is being used on my local so replaced with port 3309
+    environment: 
+      - MYSQL_ROOT_HOST=${DB_HOST} 
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - database_mysql:/var/lib/mysql
+    networks:
+      - rest-api-micro
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_container
+    depends_on:
+      - rest-api-micro-mysql
+    environment:
+      - PMA_HOST=rest-api-micro-mysql # Note PMA_HOST Must be the name of  what you used as the mysql service.
+      - PMA_USER=${DB_USER}
+      - PMA_PORT=${DB_PORT}
+      - PMA_PASSWORD=${DB_PASSWORD}
+    ports:
+      - 9090:80
+    restart: always
+    networks:
+      - rest-api-micro
+
+
+volumes:
+  api:
+  database_mysql:
+
+# Networks to be created to facilitate communication between containers
+networks:
+  rest-api-micro:
+    driver: bridge
